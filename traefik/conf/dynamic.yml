@@ -1,0 +1,32 @@
+http:
+  middlewares:
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+  routers:
+    nexus:
+      rule: "Host(`nexus.phumlaniarendse.co.za`)"
+      service: nexus-service
+      middlewares:
+        - redirect-to-https
+      priority: 1000
+      entrypoints:
+        - websecure
+      tls:
+        certresolver: cloudflare-staging
+
+  services:
+    nexus-service:
+      loadBalancer:
+        servers:
+          - url: "http://nexus:8081"
+
+tls:
+  options:
+    default:
+      minVersion: VersionTLS12
+      cipherSuites:
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384

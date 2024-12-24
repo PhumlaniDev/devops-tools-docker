@@ -1,0 +1,18 @@
+services:
+  nexus:
+    image: sonatype/nexus3
+    container_name: nexus
+    volumes:
+      - nexus_data:/nexus_data
+    environment:
+      - NEXUS_CONTEXT=/nexus
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nexus.rule: Host(`nexus.phumlaniarendse.co.za`)"
+      - "traefik.http.routers.nexus.entrypoints: websecure"
+      - "traefik.http.routers.nexus.tls.certresolver: staging"
+
+networks:
+  proxy:
+    name: "proxy"
+    driver: bridge
