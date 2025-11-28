@@ -1,0 +1,6 @@
+http:
+  middlewares:
+    test-headers:
+      headers:
+        customRequestHeaders:
+          X-Request-Header: "Test"

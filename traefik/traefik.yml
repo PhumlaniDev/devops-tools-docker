@@ -4,44 +4,48 @@ global:
 
 api:
   dashboard: true
+  debug: true
   insecure: true
 
 log:
-  level: DEBUG, INFO
+  level: DEBUG
 
 entryPoints:
   web:
     address: ":80"
-  websecure:
-    address: ":443"
+  # websecure:
+  #   address: ":443"
 
 providers:
   docker:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
+    network: "microservices-net"
   file:
-    filename: "/conf/dynamic.yml"
+    directory: "/etc/traefik"
+    watch: true
 
-certificatesResolvers:
-  staging:
-    acme:
-      email: aphumlani.dev@gmail.com
-      storage: ./letsencrypt/acme.json
-      caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
-      dnsChallenge:
-        provider: cloudflare
-        resolvers:
-          - "1.1.1.1:53"
-          - "8.8.8.8:53"
-  production:
-    acme:
-      email: aphumlani.dev@gmail.com
-      storage: /letsencrypt/acme.json
-      caServer: "https://acme-v02.api.letsencrypt.org/directory"
-      dnsChallenge:
-        provider: cloudflare
-        resolvers:
-          - "1.1.1.1:53"
-          - "8.8.8.8:53"
+# certificatesResolvers:
+#   staging:
+#     acme:
+#       email: aphumlani.dev@gmail.com
+#       storage: /etc/traefik/letsencrypt/acme.json
+#       caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
+#       dnsChallenge:
+#         provider: cloudflare
+#         resolvers:
+#           - "1.1.1.1:53"
+#           - "8.8.8.8:53"
+#         delayBeforeCheck: "10s"
+#   production:
+#     acme:
+#       email: aphumlani.dev@gmail.com
+#       storage: /letsencrypt/acme.json
+#       caServer: "https://acme-v02.api.letsencrypt.org/directory"
+#       dnsChallenge:
+#         provider: cloudflare
+#         resolvers:
+#           - "1.1.1.1:53"
+#           - "8.8.8.8:53"
 
 accessLog: {}

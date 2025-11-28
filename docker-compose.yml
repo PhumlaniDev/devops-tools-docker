@@ -1,0 +1,85 @@
+volumes:
+  grafana_data: {}
+  prometheus_data: {}
+
+networks:
+  monitoring:
+    name: "monitoring"
+    driver: bridge
+
+services:
+  grafana:
+    image: grafana/grafana-oss:${GRAFANA_VERSION}
+    container_name: grafana
+    ports:
+      - ${GRAFANA_PORT}:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    networks:
+      - monitoring
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://grafana:${GRAFANA_PORT}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    container_name: prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus/config/prometheus.yml:/etc/prometheus/prometheus.yml
+    command: 
+    - --config.file=/etc/prometheus/prometheus.yml
+    - '--storage.tsdb.path=/prometheus'
+    - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+    - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - monitoring
+    restart: unless-stopped
+  
+  node_exporter:
+    image: prom/node-exporter:v1.8.2
+
+    container_name: node_exporter
+    command: "--path.rootfs=/host"
+    pid: host
+    restart: unless-stopped
+    networks:
+      - monitoring
+    volumes:
+      - /:/host:ro,rslave
+  
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.51.0
+    container_name: cadvisor
+    ports:
+      - 8300:8080
+    volumes:
+      - /:/rootfs:ro
+      - /run:/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    privileged: true
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  # github_exporter:
+  #   container_name: github-exporter 
+  #   image: inadaptado/github-exporter:v4.0.1
+  #   ports:
+  #     - 9171:9171
+  #   environment:
+  #     # - REPOS=${REPO}
+  #     - GITHUB_TOKEN=${GH_PAT}
+  #   networks:
+  #     - monitoring

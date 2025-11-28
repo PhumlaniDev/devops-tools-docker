@@ -1,0 +1,31 @@
+services:
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 256m
+    cpus: "0.5"
+    ports:
+      - "9999:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - dozzle-data:/data
+    environment:
+      - DOZZLE_LEVEL=warn
+      - DOZZLE_TAIL_LINES=1000
+      - DOZZLE_SEARCH_BUFFER=15000 # Improve search performance
+      - TZ=Africa/Johannesburg
+
+    labels:
+      - "com.centminmod.dns.cname=dozzle.yourdomain.com"
+      - com.centminmod.watchtower.enable=true
+
+volumes:
+  dozzle-data:
+    name: dozzle-data
+    driver: local

@@ -1,0 +1,31 @@
+volumes:
+  grafana_data:
+    name: "grafana_data"
+    driver: local
+
+networks:
+  monitoring:
+    name: "monitoring"
+    driver: bridge
+
+services:
+  grafana:
+    image: grafana/grafana-oss:${GRAFANA_VERSION}
+    container_name: grafana
+    ports:
+      - ${GRAFANA_PORT}:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    networks:
+      - monitoring
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://grafana:${GRAFANA_PORT}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+  
+  

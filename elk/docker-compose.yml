@@ -1,0 +1,81 @@
+networks:
+  elk:
+    name: elk
+    driver: bridge
+
+volumes:
+  es_data:
+    name: es_data
+    driver: local
+  grafana_data:
+    name: grafana_data
+    driver: local
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELK_VERSION}
+    container_name: elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=true
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - ELASTICSEARCH_PASSWORD=${ELASTIC_PASSWORD}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    ports:
+      - ${ES_PORT}:9200
+      - 9300:9300
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${ES_PORT}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - elk
+    restart: unless-stopped
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:${ELK_VERSION}
+    container_name: logstash
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+    ports:
+      - ${LOGSTASH_PORT}:5044
+      - 5000:5000
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:9600/_node/stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - elk
+    restart: unless-stopped
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${ELK_VERSION}
+    container_name: kibana
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - ${KIBANA_PORT}:5601
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:${ES_PORT}
+    networks:
+      - elk
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${KIBANA_PORT}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped

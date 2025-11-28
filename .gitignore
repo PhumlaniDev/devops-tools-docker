@@ -1,3 +1,5 @@
 .env
 
 .vscode/
+
+nexus/nexus-data

@@ -1,0 +1,83 @@
+secrets:
+  cf-token:
+    file: ./cf-token
+
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    secrets:
+      - cf-token
+    command:
+      - "--entrypoints.http.address=:80"
+      - "--entrypoints.https.address=:443"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge=true"
+      - "--certificatesresolvers.cloudflare.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory"
+      - "--certificatesresolvers.cloudflare.acme.dnschallenge.provider=cloudflare"
+      - "--certificatesresolvers.cloudflare.acme.email=aphumlani.dev@gmail.com"
+      - "--certificatesresolvers.cloudflare.acme.storage=/certs/acme.json"
+    ports:
+      - "80:80"
+      - "8083:8080"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/traefik.yaml:/traefik.yaml:ro
+      - ./config/config.yaml:/config.yaml:ro
+      - ./certs:/certs
+      - ./logs:/var/log/traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.entrypoints=http"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.phumlaniarendse.co.za`)"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_DASHBOARD_CREDENTIALS}"
+      - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
+      - "traefik.http.routers.traefik-secure.entrypoints=https"
+      - "traefik.http.routers.traefik-secure.rule=Host(`traefik.phumlaniarendse.co.za`)"
+      - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
+      - "traefik.http.routers.traefik-secure.tls=true"
+      - "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
+      - "traefik.http.routers.traefik-secure.tls.domains[0].main=phumlaniarendse.co.za"
+      - "traefik.http.routers.traefik-secure.tls.domains[0].sans=*.phumlaniarendse.co.za"
+      - "traefik.http.routers.traefik-secure.service=api@internal"
+    env_file:
+      - .env
+    environment:
+      - TRAEFIK_DASHBOARD_CREDENTIALS:${TRAEFIK_DASHBOARD_CREDENTIALS}
+      - CF_API_EMAIL:${CF_API_EMAIL}
+      - CF_DNS_API_TOKEN_EMAIL:/run/secrets/cf-token
+    networks:
+      - frontend
+
+#  nexus:
+#    image: sonatype/nexus3:3.68.1
+#    container_name: nexus
+#    restart: unless-stopped
+#    ports:
+#      - "8081:8081"
+#    volumes:
+#      - nexus-data:/nexus-data
+#    networks:
+#      - frontend
+#      - internal
+#    labels:
+#      - "traefik.enable=true"
+#      - "traefik.http.routers.nexus.rule=Host(`nexus.phumlaniarendse.co.za`)"
+#      - "traefik.http.routers.nexus.entrypoints=websecure"
+#      - "traefik.http.routers.nexus.tls.certresolver=cloudflare"
+#      - "traefik.http.services.nexus.loadbalancer.server.port=8081"
+
+volumes:
+  nexus-data:
+    name: "nexus-data"
+
+networks:
+  frontend:
+    external: true

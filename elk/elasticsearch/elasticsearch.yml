@@ -1,0 +1,2 @@
+cluster.name: "macgyver-cluster"
+network.host: 0.0.0.0
